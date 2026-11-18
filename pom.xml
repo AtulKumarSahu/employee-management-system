@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ==================== Parent ==================== -->
+    <!--
+        Spring Boot Parent POM provides:
+        - Dependency version management (BOM - Bill of Materials)
+        - Default Maven plugin configurations
+        - Sensible defaults for Spring Boot applications
+        No need to specify versions for managed dependencies.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.5</version>
+        <relativePath/>
+    </parent>
+
+    <!-- ==================== Project Identity ==================== -->
+    <groupId>com.ems</groupId>
+    <artifactId>employee-management</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Employee Management System</name>
+    <description>
+        Enterprise-grade Employee Management System built with Java 21,
+        Spring Boot 3, PostgreSQL, JWT Authentication and OpenAPI documentation.
+    </description>
+
+    <!-- ==================== Properties ==================== -->
+    <properties>
+        <!-- Target Java 21 — enables Records, Sealed Classes, Pattern Matching -->
+        <java.version>21</java.version>
+
+        <!-- Library versions — centralized here for easy upgrades -->
+        <jjwt.version>0.12.6</jjwt.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <lombok.version>1.18.36</lombok.version>
+        <springdoc.version>2.6.0</springdoc.version>
+    </properties>
+
+    <!-- ==================== Dependencies ==================== -->
+    <dependencies>
+
+        <!-- ===== Spring Boot Core Starters ===== -->
+
+        <!--
+            spring-boot-starter-web:
+            Brings in Spring MVC, Tomcat (embedded), Jackson (JSON serialization),
+            and all web-layer infrastructure. This is the core of REST API development.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+            spring-boot-starter-data-jpa:
+            Includes Spring Data JPA + Hibernate ORM + Spring's transaction management.
+            Provides Repository abstraction (CrudRepository, JpaRepository).
+            Hibernate translates our @Entity classes to SQL DDL and DML.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!--
+            spring-boot-starter-security:
+            Provides the full Spring Security framework — authentication filters,
+            security context, password encoders, method-level security.
+            We will configure JWT on top of this.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!--
+            spring-boot-starter-validation:
+            Integrates Hibernate Validator (the reference implementation of
+            Jakarta Bean Validation). Enables @NotBlank, @Email, @Size, etc.
+            on record components and method parameters.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ===== Database ===== -->
+
+        <!--
+            postgresql:
+            The official PostgreSQL JDBC driver. Spring Boot auto-configures
+            the DataSource when this driver is on the classpath alongside
+            the spring.datasource.* properties.
+            scope=runtime: not needed at compile time, only at runtime.
+        -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+            flyway-core:
+            Database migration tool. Flyway tracks SQL migration scripts in
+            src/main/resources/db/migration, runs them in order on startup,
+            and records applied migrations in a flyway_schema_history table.
+            This ensures repeatable, version-controlled database changes.
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
+        <!--
+            flyway-database-postgresql:
+            PostgreSQL-specific Flyway support required for Flyway 10+ when
+            targeting PostgreSQL. Provides the PostgreSQL database type handler.
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- ===== JWT Authentication ===== -->
+
+        <!--
+            jjwt-api:
+            The public API for JJWT (Java JWT). Contains the interfaces and
+            fluent builder methods (Jwts.builder(), Jwts.parser()).
+            Only the API is needed at compile time.
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+
+        <!--
+            jjwt-impl:
+            The actual implementation classes for JJWT. Kept at runtime scope
+            following the API/Implementation separation principle.
+            Spring Boot will load it via ServiceLoader at runtime.
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+            jjwt-jackson:
+            Provides Jackson-based JSON parsing support for JJWT claims.
+            JJWT needs a JSON library to serialize/deserialize JWT payloads.
+            runtime scope since it's only loaded via ServiceLoader.
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ===== Code Generation ===== -->
+
+        <!--
+            lombok:
+            Reduces boilerplate via compile-time annotation processing.
+            Used selectively — mainly for @Slf4j (logging), @Builder on entities,
+            and @Data where appropriate. NOT used for DTOs (we use Java Records).
+            optional=true: not propagated to downstream projects.
+        -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!--
+            mapstruct:
+            Compile-time type-safe object mapper. Generates mapping code at build
+            time — zero reflection overhead at runtime. Maps between Entity <-> DTO.
+            Annotate interfaces with @Mapper and define the mapping methods.
+        -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
+
+        <!-- ===== API Documentation ===== -->
+
+        <!--
+            springdoc-openapi-starter-webmvc-ui:
+            Auto-generates OpenAPI 3.0 documentation by scanning your controllers,
+            DTOs and annotations. Also bundles Swagger UI at /swagger-ui.html.
+            Supports JWT Bearer token configuration in Swagger UI.
+        -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- ===== Testing ===== -->
+
+        <!--
+            spring-boot-starter-test:
+            Includes JUnit 5, Mockito, AssertJ, Spring Test context.
+            scope=test: only on classpath during mvn test phase.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            spring-security-test:
+            Provides @WithMockUser, SecurityMockMvcRequestPostProcessors, etc.
+            for testing secured endpoints without real authentication.
+        -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- ==================== Build Plugins ==================== -->
+    <build>
+        <plugins>
+
+            <!--
+                spring-boot-maven-plugin:
+                Packages the application as an executable "fat JAR" that includes
+                all dependencies. Run with: java -jar target/employee-management-1.0.0-SNAPSHOT.jar
+                Also enables spring-boot:run for development.
+                exclude Lombok from the final JAR (it's compile-only).
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!--
+                maven-compiler-plugin:
+                Configured to use Java 21 and to run BOTH Lombok and MapStruct
+                annotation processors in the correct order.
+
+                CRITICAL ORDER: lombok must be listed BEFORE mapstruct.
+                MapStruct generates code from getters/setters that Lombok creates,
+                so Lombok must process first to generate those methods, then
+                MapStruct can see them.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <annotationProcessorPaths>
+                        <!-- Lombok first — generates getters, setters, constructors -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <!-- MapStruct second — uses Lombok-generated methods -->
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <compilerArgs>
+                        <!-- Pass MapStruct config — use constructor injection in generated mappers -->
+                        <arg>-Amapstruct.defaultComponentModel=spring</arg>
+                        <!-- Warn about unmapped target properties during compilation -->
+                        <arg>-Amapstruct.unmappedTargetPolicy=WARN</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+

@@ -1,0 +1,156 @@
+# ============================================================
+# Employee Management System — Application Configuration
+# ============================================================
+# Using YAML format: more readable than .properties for nested config.
+# Spring Boot resolves properties in this priority order (highest first):
+#   1. Command-line arguments
+#   2. Environment variables
+#   3. application-{profile}.yml
+#   4. application.yml  ← this file (baseline defaults)
+# ============================================================
+
+spring:
+  application:
+    name: employee-management-system
+
+  # ==================== DataSource (PostgreSQL) ====================
+  datasource:
+    # Update with your PostgreSQL host, port and database name.
+    # Format: jdbc:postgresql://<host>:<port>/<database>
+    url: jdbc:postgresql://localhost:5432/employee_management_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+    # HikariCP connection pool — the default and best-performing pool for Spring Boot
+    hikari:
+      # Maximum number of connections kept in the pool
+      maximum-pool-size: 10
+      # Minimum idle connections maintained in the pool
+      minimum-idle: 5
+      # Time (ms) to wait for a connection before throwing an exception
+      connection-timeout: 30000
+      # Maximum lifetime (ms) of a connection in the pool — must be < server timeout
+      max-lifetime: 1800000
+      # Interval (ms) to test idle connections for validity
+      keepalive-time: 30000
+      pool-name: EMS-HikariPool
+
+  # ==================== JPA / Hibernate ====================
+  jpa:
+    # Hibernate DDL strategy:
+    #   validate — validate schema against entities but do NOT modify (safe for prod)
+    #   none     — Hibernate does nothing; Flyway owns DDL (our approach)
+    # We use 'validate' so Hibernate confirms the DB matches entities on startup.
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # Dialect tells Hibernate which SQL dialect to generate.
+        # PostgreSQLDialect: uses PostgreSQL-specific SQL features.
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Print generated SQL to stdout for debugging (disable in production).
+        show_sql: true
+        # Format multi-line SQL for readability.
+        format_sql: true
+        # Default schema — all tables will be created in the 'public' schema.
+        default_schema: public
+        # Enable Hibernate's statistics for performance analysis.
+        generate_statistics: false
+        # Batch inserts/updates for better performance with bulk operations.
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # ==================== Flyway (Database Migrations) ====================
+  flyway:
+    # Enable Flyway — it runs on application startup.
+    enabled: true
+    # Location of migration SQL scripts.
+    # Flyway looks for files matching: V<version>__<description>.sql
+    locations: classpath:db/migration
+    # Schema to manage — Flyway will track migrations in this schema.
+    schemas: public
+    # Create the flyway_schema_history table if it doesn't exist.
+    baseline-on-migrate: true
+    # Baseline version for existing databases (1 = the first migration).
+    baseline-version: 0
+    # Fail if migration checksums change (prevents accidental script modification).
+    validate-on-migrate: true
+    # Allow out-of-order migrations (useful in team development).
+    out-of-order: false
+
+  # ==================== Jackson (JSON) ====================
+  jackson:
+    # Serialize dates as ISO-8601 strings, not timestamps.
+    serialization:
+      write-dates-as-timestamps: false
+    # Ignore unknown JSON fields during deserialization (graceful API evolution).
+    deserialization:
+      fail-on-unknown-properties: false
+    # Use camelCase for JSON property names.
+    property-naming-strategy: LOWER_CAMEL_CASE
+    # Do not serialize null values in responses.
+    default-property-inclusion: NON_NULL
+
+# ==================== Server ====================
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  error:
+    # Disable Spring Boot's default /error endpoint (we handle errors ourselves).
+    whitelabel:
+      enabled: false
+    # Include stack trace in error responses (disable in production).
+    include-stacktrace: never
+
+# ==================== Logging ====================
+logging:
+  level:
+    # Root log level — INFO for general messages
+    root: INFO
+    # Our application packages — DEBUG for development
+    com.ems.employeemanagement: DEBUG
+    # Show Hibernate SQL parameter values alongside SQL
+    org.hibernate.orm.jdbc.bind: TRACE
+    # Spring Security — DEBUG to see authentication decisions during development
+    org.springframework.security: DEBUG
+  pattern:
+    # Console log format: timestamp [thread] LEVEL logger - message
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/employee-management.log
+
+# ==================== Application Custom Properties ====================
+application:
+  security:
+    jwt:
+      # IMPORTANT: Use a strong, random secret in production.
+      # Minimum 256 bits (32 characters) for HS256 algorithm.
+      # In production, inject via environment variable or secrets manager.
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      # Access token validity: 24 hours (in milliseconds)
+      expiration: 86400000
+      # Refresh token validity: 7 days (in milliseconds)
+      refresh-token:
+        expiration: 604800000
+
+# ==================== SpringDoc / OpenAPI ====================
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    # Display operations sorted by HTTP method
+    operations-sorter: method
+    # Expand operation details by default
+    doc-expansion: none
+    # Show request duration in Swagger UI
+    display-request-duration: true
+    # Try-it-out enabled by default
+    try-it-out-enabled: true
+  # Include actuator endpoints in docs (if actuator is added later)
+  show-actuator: false
+
